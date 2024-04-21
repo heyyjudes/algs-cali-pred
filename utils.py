@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 
 
+
 def load_data(dataset_str: str) -> Tuple[np.ndarray, np.ndarray]:
     if dataset_str == 'credit':
         df = pd.read_excel(
@@ -107,6 +108,7 @@ def expected_calibration_error(prob_true : np.ndarray,
             mean_true.append(np.mean(bin_prob_true))
 
     return mean_proba, mean_true, ece_l1, ece_l2
+
 
 def calibrated_mapping(x : np.ndarray,
                        intervals : list,
