@@ -77,7 +77,7 @@ def get_best_regressor(X_train: np.array,
         if score > best_score:
             best_score = score
             best_model = model_name
-    print(f"best regressor score: {best_score}")
+    print(f"best regressor score: {best_model} {best_score}")
     return best_model
 
 def model_choice(clf, xtrain=None, ytrain=None):

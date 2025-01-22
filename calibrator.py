@@ -67,15 +67,16 @@ class Calibrator:
 
 
 class HistogramCalibrator(Calibrator):
-    def __init__(self, name:str = "HistogramCalibrator", n_bins=15):
+    def __init__(self, name:str = "HistogramCalibrator", bins=15):
         super().__init__(name)
         self.name = name
-        self.n_bins = n_bins
+        self.n_bins = bins
 
     def calibrate(self, y_prob:np.array, y_true:np.array):
         binned_y_true, binned_y_prob = create_binned_data(y_true, y_prob, self.n_bins)
         self.bins_ = get_bin_boundaries(binned_y_prob)
         self.bins_score_ = np.array([np.mean(value) for value in binned_y_true])
+
 
     def transform(self, y_prob: np.array):
         indices = np.searchsorted(self.bins_, y_prob)
@@ -87,7 +88,8 @@ class PlattCalibrator(Calibrator):
         super().__init__("PlattCalibrator")
 
     def calibrate(self, y_prob: np.ndarray, y_true : np.ndarray):
-        logistic = LogisticRegression(C=1e10, solver='lbfgs')
+        logistic = LogisticRegression(C=1, solver='lbfgs')
+        #logistic = LogisticRegression()
         logistic.fit(y_prob.reshape(-1, 1), y_true)
         coeff = logistic.coef_[0]
         intercept = logistic.intercept_
