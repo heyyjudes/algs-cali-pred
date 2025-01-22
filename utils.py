@@ -1,7 +1,29 @@
 from typing import Tuple
 import numpy as np
 import pandas as pd
+from sklearn.utils import resample
 
+def balanced_subsample(y_true: np.ndarray, y_prob: np.ndarray):
+    pos_idx = np.where(y_true == 1)[0]
+    neg_idx = np.where(y_true == 0)[0]
+
+    # Determine size of smaller class
+    n_samples = min(len(pos_idx), len(neg_idx))
+
+    # Subsample the larger class to match the smaller class size
+    if len(pos_idx) > n_samples:
+        pos_idx = resample(pos_idx, n_samples=n_samples, random_state=42)
+    if len(neg_idx) > n_samples:
+        neg_idx = resample(neg_idx, n_samples=n_samples, random_state=42)
+
+    # Combine indices and sort them to maintain original order
+    balanced_idx = np.sort(np.concatenate([pos_idx, neg_idx]))
+
+    # Update arrays with balanced samples
+    y_true = y_true[balanced_idx]
+    y_prob = y_prob[balanced_idx]
+    print(f"new len: {len(y_true)}")
+    return y_true, y_prob
 
 
 def load_data(dataset_str: str) -> Tuple[np.ndarray, np.ndarray]:
@@ -58,7 +80,8 @@ def bin_calibrate(y_pred: np.ndarray,
 
 def expected_calibration_error(prob_true : np.ndarray,
                                prob_pred : np.ndarray,
-                               num_bins : int = 10) -> Tuple[list, list, float, float]:
+                               num_bins : int = 10,
+                               subsample = False) -> Tuple[list, list, float, float, float]:
     """
     Calculates the Expected Calibration Error (ECE) for a set of predicted probabilities and true labels.
 
@@ -74,6 +97,8 @@ def expected_calibration_error(prob_true : np.ndarray,
         float: L2 Calibration Error
 
     """
+    if subsample:
+        prob_true, prob_pred = balanced_subsample(y_true=prob_true, y_prob=prob_pred)
     # Sort the predicted probabilities in ascending order
     sorted_indices = np.argsort(prob_pred)
     prob_true = prob_true[sorted_indices]
@@ -86,6 +111,7 @@ def expected_calibration_error(prob_true : np.ndarray,
 
     ece_l1 = 0
     ece_l2 = 0
+    max_l1 = []
     mean_proba = []
     mean_true = []
     for bin_lower, bin_upper in zip(bin_lowers, bin_uppers):
@@ -100,14 +126,14 @@ def expected_calibration_error(prob_true : np.ndarray,
 
             # Compute the weighted contribution to the ECE
             bin_weight = len(bin_prob_true) / len(prob_true)
-            ece_l1 +=  bin_weight * np.abs(true_fraction - avg_pred_prob)
+            ece_l1 += bin_weight * np.abs(true_fraction - avg_pred_prob)
             ece_l2 += bin_weight * np.square(true_fraction - avg_pred_prob)
+            max_l1.append(np.abs(true_fraction - avg_pred_prob))
 
             # save probs
             mean_proba.append(np.mean(bin_prob_pred))
             mean_true.append(np.mean(bin_prob_true))
-
-    return mean_proba, mean_true, ece_l1, ece_l2
+    return mean_proba, mean_true, ece_l1, ece_l2, np.max(max_l1)
 
 
 def calibrated_mapping(x : np.ndarray,

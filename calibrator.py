@@ -1,6 +1,7 @@
 from sklearn.linear_model import LogisticRegression
 import numpy as np
 from typing import Tuple, List
+import utils as ut
 
 def create_binned_data(
     y_true: np.ndarray,
@@ -72,7 +73,12 @@ class HistogramCalibrator(Calibrator):
         self.name = name
         self.n_bins = bins
 
-    def calibrate(self, y_prob:np.array, y_true:np.array):
+    def calibrate(self, y_prob:np.array, y_true:np.array, subsample=False):
+        # insert subsample code here
+        if subsample:
+            y_true, y_prob = ut.balanced_subsample(y_true=y_true,
+                                                   y_prob=y_prob)
+
         binned_y_true, binned_y_prob = create_binned_data(y_true, y_prob, self.n_bins)
         self.bins_ = get_bin_boundaries(binned_y_prob)
         self.bins_score_ = np.array([np.mean(value) for value in binned_y_true])
@@ -87,7 +93,10 @@ class PlattCalibrator(Calibrator):
         self.name = 'PlattScaling'
         super().__init__("PlattCalibrator")
 
-    def calibrate(self, y_prob: np.ndarray, y_true : np.ndarray):
+    def calibrate(self, y_prob: np.ndarray, y_true: np.ndarray, subsample=False):
+        if subsample:
+            y_true, y_prob = ut.balanced_subsample(y_true=y_true,
+                                                   y_prob=y_prob)
         logistic = LogisticRegression(C=1, solver='lbfgs')
         #logistic = LogisticRegression()
         logistic.fit(y_prob.reshape(-1, 1), y_true)
@@ -108,7 +117,10 @@ class BinningCalibrator(Calibrator):
         self.B = bins
         super().__init__("BinningCalibrator")
 
-    def calibrate(self, y_prob: np.ndarray, y_true : np.ndarray):
+    def calibrate(self, y_prob: np.ndarray, y_true : np.ndarray, subsample=False):
+        if subsample:
+            y_true, y_prob = ut.balanced_subsample(y_true=y_true,
+                                                   y_prob=y_prob)
         sorted_y = np.asarray(y_true)[np.argsort(y_prob)]
         scores = np.asarray(y_prob)[np.argsort(y_prob)]
         binned_y_true = np.array_split(sorted_y, self.B)

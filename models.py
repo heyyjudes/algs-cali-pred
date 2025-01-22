@@ -33,11 +33,11 @@ reg_dict = {
     "LR": LinearRegression,
     "BR": BayesianRidge,
     "xgb": XGBRegressor,
-    "kernel": KernelRidge,
-    "SVR": SVR,
-    "sgd": SGDRegressor,
-    "en":  ElasticNet,
-    "RFR": RandomForestRegressor
+    # "kernel": KernelRidge,
+    # "SVR": SVR,
+    # "sgd": SGDRegressor,
+    # "en":  ElasticNet,
+    # "RFR": RandomForestRegressor
 }
 
 def get_best_classifier(X_train: np.array,
@@ -50,7 +50,6 @@ def get_best_classifier(X_train: np.array,
         curr_clf = model_choice(model_name, X_train, y_train)
         curr_clf.fit(X_train, y_train)
         score = roc_auc_score(y_valid, curr_clf.predict_proba(x_valid)[:, 1])
-        print(model_name, score)
         if score > best_acc:
             best_acc = score
             best_model = model_name
