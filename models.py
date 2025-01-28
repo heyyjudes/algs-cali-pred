@@ -27,7 +27,6 @@ clf_dict = {
     "XGB": xgb.XGBClassifier,
     "KNN": KNeighborsClassifier,
     "RF": RandomForestClassifier,
-    "SVM": SVC,
     "NN": MLPClassifier,
 }
 

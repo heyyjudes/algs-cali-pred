@@ -22,7 +22,6 @@ def balanced_subsample(y_true: np.ndarray, y_prob: np.ndarray):
     # Update arrays with balanced samples
     y_true = y_true[balanced_idx]
     y_prob = y_prob[balanced_idx]
-    print(f"new len: {len(y_true)}")
     return y_true, y_prob
 
 

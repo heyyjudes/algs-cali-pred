@@ -1,4 +1,7 @@
 import numpy as np
+import pandas as pd
+
+
 def pip_alg(u: int,
             l: int,
             delta: float,
@@ -13,12 +16,14 @@ def pip_alg(u: int,
         return b * min(1, np.sqrt(delta / (1 - delta)))
     else:
         if delta > l / (l + b):
-            zeta = b / l
+            zeta = 1 + b / l
         else:
             zeta = delta + b * (1 - delta) / l + 2 * np.sqrt(delta * b * (1 - delta) / l)
+        #print(zeta, delta)
         if zeta >= 2 and delta + u / b >= 2:
             return b
         elif zeta <= delta + u / b:
+            #print(np.sqrt(b * delta / l * (1 - delta)))
             return l * min(np.sqrt(b * delta / l * (1 - delta)), 1)
         else:
             return u
@@ -66,6 +71,15 @@ def opt_ski_rental(b: int, y: int):
     else:
         return y
 
+def get_CR_df(df: pd.DataFrame, buy_day: str):
+    return df.apply(
+        lambda row: get_CR(
+            buy=row[buy_day],
+            y=row['y'],
+            b=row['b']
+        ),
+        axis=1
+    )
 
 def get_CR(b: int, y: int, buy: int):
     return get_alg(buy=buy, y=y, b=b) / opt_ski_rental(b=b, y=y)
