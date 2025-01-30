@@ -1,9 +1,71 @@
-from typing import Tuple
 import numpy as np
 import pandas as pd
+from typing import Tuple
 from sklearn.utils import resample
 
-def balanced_subsample(y_true: np.ndarray, y_prob: np.ndarray):
+
+def uniform_subsample_df(df, column, n_bins=50, samples_per_bin=None):
+    """
+    Subsample a DataFrame to create a more uniform distribution of a specified column.
+
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        Input DataFrame
+    column : str
+        Name of the column to make uniform
+    n_bins : int
+        Number of bins to use for discretizing the column
+    samples_per_bin : int or None
+        Number of samples to keep per bin. If None, uses the minimum count across bins
+
+    Returns:
+    --------
+    pandas.DataFrame
+        Subsampled DataFrame with more uniform distribution of specified column
+    """
+    # Get the column values
+    y = df[column].values
+
+    # Create bins
+    bins = np.linspace(y.min(), y.max(), n_bins + 1)
+
+    # Find which bin each sample belongs to
+    bin_indices = np.digitize(y, bins) - 1
+
+    # Count samples in each bin
+    bin_counts = np.bincount(bin_indices, minlength=n_bins)
+    # If samples_per_bin not specified, use minimum non-zero count
+    if samples_per_bin is None:
+        samples_per_bin = max(1, min(count for count in bin_counts if count > 0))
+    # Initialize list for subsampled data
+    subsampled_dfs = []
+
+    # Subsample from each bin
+    for i in range(n_bins):
+        mask = (bin_indices == i)
+        if np.sum(mask) > 0:
+            # Get samples from this bin
+            df_bin = df[mask]
+
+            # If we have more samples than needed, subsample
+            if len(df_bin) > samples_per_bin:
+                df_bin = df_bin.sample(n=samples_per_bin, random_state=42)
+            subsampled_dfs.append(df_bin)
+
+    # Concatenate all subsampled data
+    return pd.concat(subsampled_dfs, axis=0).reset_index(drop=True)
+
+
+def balanced_subsample(y_true: np.ndarray, y_prob: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    '''
+    Creates a balanced subsample of binary classification data by randomly sampling from the larger class
+    to match the size of the smaller class.
+
+    :param y_true: Array of true binary labels (0 or 1)
+    :param y_prob: Array of predicted probabilities corresponding to the true labels
+    :return: Tuple of (balanced_y_true, balanced_y_prob) containing equal numbers of positive and negative samples
+    '''
     pos_idx = np.where(y_true == 1)[0]
     neg_idx = np.where(y_true == 0)[0]
 
@@ -23,29 +85,6 @@ def balanced_subsample(y_true: np.ndarray, y_prob: np.ndarray):
     y_true = y_true[balanced_idx]
     y_prob = y_prob[balanced_idx]
     return y_true, y_prob
-
-
-def load_data(dataset_str: str) -> Tuple[np.ndarray, np.ndarray]:
-    if dataset_str == 'credit':
-        df = pd.read_excel(
-            'https://archive.ics.uci.edu/ml/machine-learning-databases/00350/default%20of%20credit%20card%20clients.xls',
-            header=1)
-
-        target = 'default payment next month'
-        features = [x for x in df.columns if x not in (target, 'ID')]
-        X, y = df[features], df[target]
-
-        print('Number of total samples:    {}'.format(X.shape[0]))
-        print('Number of positive samples: {}'.format(y.sum()))
-        # do some undersampling, to make the class more balanced
-        idx_neg = X[y == 0].sample(y.sum()).index.values
-        idx_pos = X[y == 1].index.values
-        idx = np.concatenate([idx_neg, idx_pos])
-        X = X.iloc[idx, :].reset_index(drop=True)
-        y = y.iloc[idx].reset_index(drop=True)
-    else:
-        raise ValueError("Dataset not supported or no dataset selected")
-    return X, y
 
 
 def bin_calibrate(y_pred: np.ndarray,
@@ -77,6 +116,7 @@ def bin_calibrate(y_pred: np.ndarray,
           new_values.append(np.mean(sorted_y[int(i*delta):]))
     return intervals, new_values
 
+
 def expected_calibration_error(prob_true : np.ndarray,
                                prob_pred : np.ndarray,
                                num_bins : int = 10,
@@ -94,6 +134,7 @@ def expected_calibration_error(prob_true : np.ndarray,
         list: true label proportion
         float: L1 Calibration Error
         float: L2 Calibration Error
+        float: max L1 Calibration error
 
     """
     if subsample:

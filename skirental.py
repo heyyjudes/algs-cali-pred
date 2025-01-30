@@ -19,7 +19,8 @@ def pip_alg(u: int,
             zeta = 1 + b / l
         else:
             zeta = delta + b * (1 - delta) / l + 2 * np.sqrt(delta * b * (1 - delta) / l)
-        #print(zeta, delta)
+        #print(zeta, delta, delta + u / b)
+
         if zeta >= 2 and delta + u / b >= 2:
             return b
         elif zeta <= delta + u / b:
@@ -58,7 +59,8 @@ def get_alg(buy: int, y: int, b: int):
     # buy day is less than number of days skied
     if buy < y:
         # cost is the 1 per day for buy days and then cost of skis
-        return min(buy, b) + b
+        #return min(buy, b) + b
+        return buy + b
         # buy day is after day skied
     elif buy >= y:
         # cost is 1 per day for y days
@@ -82,4 +84,6 @@ def get_CR_df(df: pd.DataFrame, buy_day: str):
     )
 
 def get_CR(b: int, y: int, buy: int):
-    return get_alg(buy=buy, y=y, b=b) / opt_ski_rental(b=b, y=y)
+    alg = get_alg(buy=buy, y=y, b=b)
+    opt = opt_ski_rental(b=b, y=y)
+    return  alg/opt

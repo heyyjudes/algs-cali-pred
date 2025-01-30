@@ -3,10 +3,10 @@ import numpy as np
 from typing import Tuple, List
 import utils as ut
 
-def create_binned_data(
-    y_true: np.ndarray,
-    y_prob: np.ndarray,
-    n_bins: int) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+
+def create_binned_data(y_true: np.ndarray,
+                       y_prob: np.ndarray,
+                       n_bins: int) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """
     Bin ``y_true`` and ``y_prob`` by distribution of the data.
     i.e. each bin will contain approximately an equal number of
@@ -60,6 +60,7 @@ def get_bin_boundaries(binned_y_prob: List[np.ndarray]) -> np.ndarray:
     bins.append(1.0)
     return np.array(bins)
 
+
 class Calibrator:
     def __init__(self, name:str):
         self.params = {}
@@ -68,7 +69,7 @@ class Calibrator:
 
 
 class HistogramCalibrator(Calibrator):
-    def __init__(self, name:str = "HistogramCalibrator", bins=15):
+    def __init__(self, name:str = "HistogramCalibrator", bins=20):
         super().__init__(name)
         self.name = name
         self.n_bins = bins
@@ -83,10 +84,14 @@ class HistogramCalibrator(Calibrator):
         self.bins_ = get_bin_boundaries(binned_y_prob)
         self.bins_score_ = np.array([np.mean(value) for value in binned_y_true])
 
-
-    def transform(self, y_prob: np.array):
+    def transform(self, y_prob: np.ndarray) -> np.ndarray:
+        '''
+        :param y_prob: Array of uncalibrated prediction probabilities, typically between 0 and 1
+        :return: Array of calibrated probabilities matched to their corresponding bins
+        '''
         indices = np.searchsorted(self.bins_, y_prob)
         return self.bins_score_[indices]
+
 
 class PlattCalibrator(Calibrator):
     def __init__(self):
@@ -106,7 +111,11 @@ class PlattCalibrator(Calibrator):
         self.params['intercept'] = intercept
         return
 
-    def transform(self, y_prob):
+    def transform(self, y_prob: np.ndarray) -> np.ndarray:
+        '''
+        :param y_prob: Array of uncalibrated prediction probabilities, typically between 0 and 1
+        :return: Array of calibrated probabilities matched to their corresponding bins
+        '''
         out = y_prob * self.params['coeff'] + self.params['intercept']
         return 1/ (1+ np.exp(-out))
 
@@ -143,5 +152,9 @@ class BinningCalibrator(Calibrator):
         return
 
     def transform(self, y_prob: np.ndarray) -> np.ndarray:
+        '''
+        :param y_prob: Array of uncalibrated prediction probabilities, typically between 0 and 1
+        :return: Array of calibrated probabilities matched to their corresponding bins
+        '''
         indices = np.searchsorted(self.params['intervals'], y_prob)
         return self.params['new_values'][indices]
