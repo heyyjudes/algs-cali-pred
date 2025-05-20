@@ -12,7 +12,7 @@ This repository provides implementations for experiments in the paper. We use pa
 ## Data
 
 ### Citibike Dataset
-The large Citibike dataset file (`clean_data/citibike-june2015.csv`) is not included in this repository due to size limitations. You can download it from:
+The large Citibike dataset file (`clean_data/citibike-june2015.csv`) can be downloaded it from:
 - [Citibike System Data](https://citibikenyc.com/system-data) - Download the June 2015 data
 - Place the downloaded file in the `clean_data` directory
 
@@ -53,9 +53,11 @@ Both notebooks rely on several other files:
 ## Citation
 
 If you use this code or find it helpful, please cite our paper:
+```
 @article{SVW2025algorithms,
   title={Algorithms with calibrated machine learning predictions},
   author={Shen, Judy Hanwen and Vitercik, Ellen and Wikum, Anders},
   journal={arXiv preprint arXiv:2502.02861},
   year={2025}
 }
+```
