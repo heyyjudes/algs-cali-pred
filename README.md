@@ -9,6 +9,16 @@ The field of algorithms with predictions incorporates machine learning advice in
 
 This repository provides implementations for experiments in the paper. We use part of the [Citibike dataset](https://citibikenyc.com/system-data) for ski-rental and the [UCI Sepsis](https://archive.ics.uci.edu/dataset/827/sepsis+survival+minimal+clinical+records) dataset for scheduling and ski rental problems with predictions and calibration.
 
+## Data
+
+### Citibike Dataset
+The large Citibike dataset file (`clean_data/citibike-june2015.csv`) is not included in this repository due to size limitations. You can download it from:
+- [Citibike System Data](https://citibikenyc.com/system-data) - Download the June 2015 data
+- Place the downloaded file in the `clean_data` directory
+
+### UCI Sepsis Dataset
+The UCI Sepsis dataset will be automatically downloaded when running the notebooks using the `ucimlrepo` package.
+
 ## Installation
 
 1. **Clone the repository:**
