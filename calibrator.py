@@ -4,9 +4,9 @@ from typing import Tuple, List
 import utils as ut
 
 
-def create_binned_data(y_true: np.ndarray,
-                       y_prob: np.ndarray,
-                       n_bins: int) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+def create_binned_data(
+    y_true: np.ndarray, y_prob: np.ndarray, n_bins: int
+) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """
     Bin ``y_true`` and ``y_prob`` by distribution of the data.
     i.e. each bin will contain approximately an equal number of
@@ -62,74 +62,71 @@ def get_bin_boundaries(binned_y_prob: List[np.ndarray]) -> np.ndarray:
 
 
 class Calibrator:
-    def __init__(self, name:str):
+    def __init__(self, name: str):
         self.params = {}
         self.calibrator_fn = None
         self.name = name
 
 
 class HistogramCalibrator(Calibrator):
-    def __init__(self, name:str = "HistogramCalibrator", bins=20):
+    def __init__(self, name: str = "HistogramCalibrator", bins=20):
         super().__init__(name)
         self.name = name
         self.n_bins = bins
 
-    def calibrate(self, y_prob:np.array, y_true:np.array, subsample=False):
+    def calibrate(self, y_prob: np.array, y_true: np.array, subsample=False):
         # insert subsample code here
         if subsample:
-            y_true, y_prob = ut.balanced_subsample(y_true=y_true,
-                                                   y_prob=y_prob)
+            y_true, y_prob = ut.balanced_subsample(y_true=y_true, y_prob=y_prob)
 
         binned_y_true, binned_y_prob = create_binned_data(y_true, y_prob, self.n_bins)
         self.bins_ = get_bin_boundaries(binned_y_prob)
         self.bins_score_ = np.array([np.mean(value) for value in binned_y_true])
 
     def transform(self, y_prob: np.ndarray) -> np.ndarray:
-        '''
+        """
         :param y_prob: Array of uncalibrated prediction probabilities, typically between 0 and 1
         :return: Array of calibrated probabilities matched to their corresponding bins
-        '''
+        """
         indices = np.searchsorted(self.bins_, y_prob)
         return self.bins_score_[indices]
 
 
 class PlattCalibrator(Calibrator):
     def __init__(self):
-        self.name = 'PlattScaling'
+        self.name = "PlattScaling"
         super().__init__("PlattCalibrator")
 
     def calibrate(self, y_prob: np.ndarray, y_true: np.ndarray, subsample=False):
         if subsample:
-            y_true, y_prob = ut.balanced_subsample(y_true=y_true,
-                                                   y_prob=y_prob)
-        logistic = LogisticRegression(C=1, solver='lbfgs')
-        #logistic = LogisticRegression()
+            y_true, y_prob = ut.balanced_subsample(y_true=y_true, y_prob=y_prob)
+        logistic = LogisticRegression(C=1, solver="lbfgs")
+        # logistic = LogisticRegression()
         logistic.fit(y_prob.reshape(-1, 1), y_true)
         coeff = logistic.coef_[0]
         intercept = logistic.intercept_
-        self.params['coeff'] = coeff
-        self.params['intercept'] = intercept
+        self.params["coeff"] = coeff
+        self.params["intercept"] = intercept
         return
 
     def transform(self, y_prob: np.ndarray) -> np.ndarray:
-        '''
+        """
         :param y_prob: Array of uncalibrated prediction probabilities, typically between 0 and 1
         :return: Array of calibrated probabilities matched to their corresponding bins
-        '''
-        out = y_prob * self.params['coeff'] + self.params['intercept']
-        return 1/ (1+ np.exp(-out))
+        """
+        out = y_prob * self.params["coeff"] + self.params["intercept"]
+        return 1 / (1 + np.exp(-out))
 
 
 class BinningCalibrator(Calibrator):
     def __init__(self, bins=20):
-        self.name = 'BinningCalibrator'
+        self.name = "BinningCalibrator"
         self.B = bins
         super().__init__("BinningCalibrator")
 
-    def calibrate(self, y_prob: np.ndarray, y_true : np.ndarray, subsample=False):
+    def calibrate(self, y_prob: np.ndarray, y_true: np.ndarray, subsample=False):
         if subsample:
-            y_true, y_prob = ut.balanced_subsample(y_true=y_true,
-                                                   y_prob=y_prob)
+            y_true, y_prob = ut.balanced_subsample(y_true=y_true, y_prob=y_prob)
         sorted_y = np.asarray(y_true)[np.argsort(y_prob)]
         scores = np.asarray(y_prob)[np.argsort(y_prob)]
         binned_y_true = np.array_split(sorted_y, self.B)
@@ -147,14 +144,14 @@ class BinningCalibrator(Calibrator):
         intervals.append(1.0)
         new_values.append(np.mean(binned_y_true[-1]))
 
-        self.params['intervals'] = np.asarray(intervals)
-        self.params['new_values'] = np.asarray(new_values)
+        self.params["intervals"] = np.asarray(intervals)
+        self.params["new_values"] = np.asarray(new_values)
         return
 
     def transform(self, y_prob: np.ndarray) -> np.ndarray:
-        '''
+        """
         :param y_prob: Array of uncalibrated prediction probabilities, typically between 0 and 1
         :return: Array of calibrated probabilities matched to their corresponding bins
-        '''
-        indices = np.searchsorted(self.params['intervals'], y_prob)
-        return self.params['new_values'][indices]
+        """
+        indices = np.searchsorted(self.params["intervals"], y_prob)
+        return self.params["new_values"][indices]
